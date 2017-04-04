@@ -624,8 +624,28 @@ statement_affects_only_nonpermanent(Node *parsetree)
 			}
 		case T_IndexStmt:
 			{
-				IndexStmt *stmt = (IndexStmt *) parsetree;
-				return !ispermanent(stmt->relation->relpersistence);
+				Oid       relOid;
+				Relation  rel;
+				bool      istemp;
+
+				IndexStmt  *stmt = (IndexStmt *) parsetree;
+				relOid = RangeVarGetRelidExtended(stmt->relation,
+												  AccessExclusiveLock,
+												  true,
+												  false,
+												  NULL,
+												  NULL);
+				if (relOid == InvalidOid)
+				{
+					elog(LOG, "Cannot find OID for relation %s", stmt->relation->relname);
+					return true;
+				}
+
+				rel = relation_open(relOid, AccessExclusiveLock);
+				istemp = !ispermanent(rel->rd_rel->relpersistence);
+				relation_close(rel, NoLock);
+
+				return istemp;
 			}
 		case T_CreateSeqStmt:
 			{
