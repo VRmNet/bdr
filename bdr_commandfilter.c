@@ -627,6 +627,16 @@ statement_affects_only_nonpermanent(Node *parsetree)
 				IndexStmt *stmt = (IndexStmt *) parsetree;
 				return !ispermanent(stmt->relation->relpersistence);
 			}
+		case T_CreateSeqStmt:
+			{
+				CreateSeqStmt *stmt = (CreateSeqStmt *) parsetree;
+				return !ispermanent(stmt->sequence->relpersistence);
+			}
+		case T_ViewStmt:
+			{
+				ViewStmt *stmt = (ViewStmt *) parsetree;
+				return !ispermanent(stmt->view->relpersistence);
+			}
 		/* FIXME: Add more types of statements */
 		default:
 			break;
