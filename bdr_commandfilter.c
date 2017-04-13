@@ -647,6 +647,31 @@ statement_affects_only_nonpermanent(Node *parsetree)
 
 				return istemp;
 			}
+		case T_AlterTableStmt:
+			{
+				Oid       relOid;
+				Relation  rel;
+				bool      istemp;
+
+				AlterTableStmt  *stmt = (AlterTableStmt *) parsetree;
+				relOid = RangeVarGetRelidExtended(stmt->relation,
+												  AccessExclusiveLock,
+												  true,
+												  false,
+												  NULL,
+												  NULL);
+				if (relOid == InvalidOid)
+				{
+					elog(LOG, "Cannot find OID for relation %s", stmt->relation->relname);
+					return true;
+				}
+
+				rel = relation_open(relOid, AccessExclusiveLock);
+				istemp = !ispermanent(rel->rd_rel->relpersistence);
+				relation_close(rel, NoLock);
+
+				return istemp;
+			}
 		case T_CreateSeqStmt:
 			{
 				CreateSeqStmt *stmt = (CreateSeqStmt *) parsetree;
